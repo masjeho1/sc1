@@ -235,52 +235,21 @@ rm -rf /root/vnstat-2.6
 mkdir -p /usr/local/gandring
 mkdir -p /etc/gandring
 
-# install stunnel 5 
-cd /root/
-wget -q -O stunnel5.zip "https://raw.githubusercontent.com/masjeho1/sc1/main/stunnel5.zip"
-unzip -o stunnel5.zip
-cd /root/stunnel
-chmod +x configure
-./configure
-make
-make install
-cd /root
-rm -r -f stunnel
-rm -f stunnel5.zip
-mkdir -p /etc/stunnel5
-chmod 644 /etc/stunnel5
-# install wstunnel wireguard
-wget -q -O wstunnel-64-linux "https://raw.githubusercontent.com/masjeho1/sc1/main/wstunnel-x64-linux"
-cd
-mkdir -p wstunnel /etc/ /usr/local/bin/wstunnel
-sudo setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/wstunnel
-cat > /etc/systemd/system/wstunnel.service
-[Unit]
-Description=Tunnel WG UDP over websocket
-After=network.target
+# install stunnel
+apt install stunnel4 -y
+## choose which one work on your vps, [ if u got some issue ]
+## after configur or make change stunnel.conf
+## and if this three not isn't fixed your pid file issue 
+### so u need to locat your pid it been saved 
+## not find ,, configur your stunnel.conf until work
+## /*/*/stunnel4.pid or /*/*/stunnel.pid
+# if use default setup, 1 from this 3 may solve your issue
+# pid = /run/stunnel.pid
+# pid = /var/run/stunnel.pid
+# pid = /var/run/stunnel4.pid
 
-[Service]
-Type=simple 
-User=nobody 
-ExecStart=/usr/local/bin/wstunnel -v --server wss://0.0.0.0:443 --restrictTo=127.0.0.1:636
-Restart=no 
-
-[Install] 
-WantedBy=multi-user.target
-END
-sudo systemctl enable wstunnel
-sudo systemctl start wstunnel
-
-sudo systemctl enable wsstunnel
-sudo systemctl start wsstunnel
-apt update && apt install -y curl jq
-sed -i $IP2 /etc/local/bin/wstunnel
-cp wstunnel /usr/local/bin/wstunnel
-mkdir -p wstunnel > /etc/wireguard/wstunnel.conf
-cat > /etc/wireguard/wstunnel.conf
-# Download Config Stunnel5
-cat > /etc/stunnel5/stunnel5.conf <<-END
-cert = /etc/stunnel5/stunnel5.pem
+cat > /etc/stunnel/stunnel.conf <<EOF
+cert = /etc/stunnel/stunnel.pem
 client = no
 socket = a:SO_REUSEADDR=1
 socket = l:TCP_NODELAY=1
@@ -312,35 +281,12 @@ END
 openssl genrsa -out key.pem 2048
 openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
 -subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
-cat key.pem cert.pem >> /etc/stunnel5/stunnel5.pem
+cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
 
-# Service Stunnel5 systemctl restart stunnel5
-cat > /etc/systemd/system/stunnel5.service << END
-[Unit]
-Description=Stunnel5 Service
-Documentation=https://stunnel.org
-Documentation=https://github.com/masjeho1/sc1/main/
-After=syslog.target network-online.target
-
-[Service]
-ExecStart=/usr/local/gandring/stunnel5 /etc/stunnel5/stunnel5.conf
-Type=forking
-
-[Install]
-WantedBy=multi-user.target
-END
-
-# Service Stunnel5 /etc/init.d/stunnel5
-wget -q -p https://github.com/actions/python-versions/releases/download/3.11.0-alpha.4-1754961913/python-3.11.0-alpha.4-linux-20.04-x64.tar.gz"
-chmod +x python-3.11.0-alpha.4-linux-20.04-x64.tar.gz
-chmod +x /etc/python3.11/site_customize.py
-
-wget -q -O /etc/init.d/stunnel5 "https://raw.githubusercontent.com/masjeho1/sc1/main/stunnel5.init && chmod +x stunnel5.init && ./stunnel5.init
-
-# Ubah Izin Akses
-chmod 600 /etc/stunnel5/stunnel5.pem
-chmod +x /etc/init.d/stunnel5
-cp /usr/local/bin/stunnel /usr/local/gandring/stunnel5
+# konfigurasi stunnel
+sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
+#/etc/init.d/stunnel4 restart
+systemctl restart stunnel4
 
 # Remove File
 #rm -r -f /usr/local/share/doc/stunnel/
@@ -351,10 +297,10 @@ rm -f /usr/local/bin/stunnel4
 #rm -f /usr/local/bin/stunnel5
 
 # Restart Stunnel 5
-systemctl stop stunnel5
-systemctl enable stunnel5
-systemctl start stunnel5
-systemctl restart stunnel5
+systemctl stop stunnel4
+systemctl enable stunnel4
+systemctl start stunnel4
+systemctl restart stunnel4
 /etc/init.d/stunnel5 restart
 /etc/init.d/stunnel5 status
 /etc/init.d/stunnel5 restart
